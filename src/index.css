@@ -1,0 +1,19 @@
+
+@import "tailwindcss";
+
+html {
+  min-height: 100%;
+  background-color: #030712;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: #030712;
+}
