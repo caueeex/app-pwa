@@ -109,8 +109,14 @@ export async function deleteSale(saleId: string): Promise<void> {
 
   if (!rpc.error) return
 
-  if (!isMissingRpc(rpc.error)) {
-    throw new Error(rpc.error.message || 'Não foi possível excluir a venda.')
+  const rpcMessage = rpc.error.message || ''
+  const canFallback =
+    isMissingRpc(rpc.error) ||
+    isForeignKeyViolation(rpc.error) ||
+    /stock_movements/i.test(rpcMessage)
+
+  if (!canFallback) {
+    throw new Error(rpcMessage || 'Não foi possível excluir a venda.')
   }
 
   const { data: sale, error: saleLookupError } = await supabase
@@ -124,6 +130,7 @@ export async function deleteSale(saleId: string): Promise<void> {
   }
 
   const relatedDeletes = await Promise.all([
+    supabase.from('stock_movements').delete().eq('sale_id', saleId),
     supabase.from('sale_payments').delete().eq('sale_id', saleId),
     supabase.from('sale_installments').delete().eq('sale_id', saleId),
   ])
@@ -142,7 +149,7 @@ export async function deleteSale(saleId: string): Promise<void> {
   if (saleDeleteError) {
     if (isForeignKeyViolation(saleDeleteError)) {
       throw new Error(
-        'Não foi possível excluir a venda: ainda há pagamentos ou parcelas vinculadas.'
+        'Não foi possível excluir a venda: ainda há movimentos de estoque, pagamentos ou parcelas vinculadas.'
       )
     }
 

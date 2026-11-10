@@ -92,11 +92,14 @@ export async function deleteProduct(id: string): Promise<void> {
 
   if (!rpc.error) return
 
-  if (!isMissingRpc(rpc.error)) {
-    throw new Error(
-      rpc.error.message ||
-        'Não foi possível excluir o produto.'
-    )
+  const rpcMessage = rpc.error.message || ''
+  const canFallback =
+    isMissingRpc(rpc.error) ||
+    isForeignKeyViolation(rpc.error) ||
+    /stock_movements|purchases/i.test(rpcMessage)
+
+  if (!canFallback) {
+    throw new Error(rpcMessage || 'Não foi possível excluir o produto.')
   }
 
   const { count: salesCount, error: salesError } = await supabase
@@ -121,6 +124,8 @@ export async function deleteProduct(id: string): Promise<void> {
 
   const purchaseIds = (purchases ?? []).map((purchase) => purchase.id)
 
+  await deleteIgnoreMissing('stock_movements', 'product_id', [id])
+  await deleteIgnoreMissing('stock_movements', 'purchase_id', purchaseIds)
   await deleteIgnoreMissing('purchase_installments', 'purchase_id', purchaseIds)
   await deleteIgnoreMissing('purchase_payments', 'purchase_id', purchaseIds)
 

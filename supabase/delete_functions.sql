@@ -1,5 +1,5 @@
 -- Rode no SQL Editor do Supabase (Dashboard → SQL → New query).
--- Essas funções deixam exclusão de produto/venda segura e atômica.
+-- Atualizado para limpar também a tabela stock_movements.
 
 create or replace function public.delete_product(p_product_id uuid)
 returns void
@@ -31,6 +31,14 @@ begin
   if v_sales_count > 0 then
     raise exception
       'Este produto possui vendas. Exclua as vendas antes de apagar o produto.';
+  end if;
+
+  if to_regclass('public.stock_movements') is not null then
+    delete from public.stock_movements
+    where product_id = p_product_id
+       or purchase_id in (
+            select id from public.purchases where product_id = p_product_id
+          );
   end if;
 
   if to_regclass('public.purchase_installments') is not null then
@@ -79,6 +87,11 @@ begin
 
   if v_product_id is null then
     raise exception 'Venda não encontrada.';
+  end if;
+
+  if to_regclass('public.stock_movements') is not null then
+    delete from public.stock_movements
+    where sale_id = p_sale_id;
   end if;
 
   delete from public.sale_payments
