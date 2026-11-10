@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
+  deleteSale,
   getSaleProducts,
   getSales,
   registerSale,
@@ -72,6 +73,7 @@ export default function Sales() {
   const [products, setProducts] = useState<SaleProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -267,6 +269,34 @@ export default function Sales() {
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDeleteSale(sale: Sale) {
+    const productName = sale.products?.name || 'este produto'
+    const confirmed = window.confirm(
+      `Excluir a venda de ${sale.quantity} un. de "${productName}"?\n\nO estoque será devolvido ao produto.`
+    )
+
+    if (!confirmed) return
+
+    setError('')
+    setSuccess('')
+    setDeletingId(sale.id)
+
+    try {
+      await deleteSale(sale.id)
+      setSuccess('Venda excluída e estoque devolvido.')
+      await loadData()
+    } catch (err) {
+      console.error(err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível excluir a venda.'
+      )
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -554,6 +584,17 @@ export default function Sales() {
                     Custo registrado:{' '}
                     {currency(Number(sale.unit_cost_snapshot || 0))}
                   </p>
+
+                  <div className="row">
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={deletingId === sale.id}
+                      onClick={() => void handleDeleteSale(sale)}
+                    >
+                      {deletingId === sale.id ? 'Excluindo...' : 'Excluir venda'}
+                    </Button>
+                  </div>
                 </article>
               ))}
             </div>

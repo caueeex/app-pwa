@@ -1,4 +1,10 @@
 import { supabase } from '../lib/supabase'
+import {
+  isForeignKeyViolation,
+  isMissingRelation,
+  isMissingRpc,
+  toUserError,
+} from '../lib/supabaseErrors'
 
 export type SaleProduct = {
   id: string
@@ -94,4 +100,84 @@ export async function registerSale(input: SaleInput): Promise<string> {
 
   if (error) throw error
   return data as string
+}
+
+export async function deleteSale(saleId: string): Promise<void> {
+  const rpc = await supabase.rpc('delete_sale', {
+    p_sale_id: saleId,
+  })
+
+  if (!rpc.error) return
+
+  if (!isMissingRpc(rpc.error)) {
+    throw new Error(rpc.error.message || 'Não foi possível excluir a venda.')
+  }
+
+  const { data: sale, error: saleLookupError } = await supabase
+    .from('sales')
+    .select('id, product_id, quantity')
+    .eq('id', saleId)
+    .single()
+
+  if (saleLookupError) {
+    throw toUserError(saleLookupError, 'Venda não encontrada.')
+  }
+
+  const relatedDeletes = await Promise.all([
+    supabase.from('sale_payments').delete().eq('sale_id', saleId),
+    supabase.from('sale_installments').delete().eq('sale_id', saleId),
+  ])
+
+  for (const result of relatedDeletes) {
+    if (result.error && !isMissingRelation(result.error)) {
+      throw result.error
+    }
+  }
+
+  const { error: saleDeleteError } = await supabase
+    .from('sales')
+    .delete()
+    .eq('id', saleId)
+
+  if (saleDeleteError) {
+    if (isForeignKeyViolation(saleDeleteError)) {
+      throw new Error(
+        'Não foi possível excluir a venda: ainda há pagamentos ou parcelas vinculadas.'
+      )
+    }
+
+    throw saleDeleteError
+  }
+
+  const { data: product, error: productLookupError } = await supabase
+    .from('products')
+    .select('id, quantity, status')
+    .eq('id', sale.product_id)
+    .single()
+
+  if (productLookupError) {
+    throw new Error(
+      'Venda excluída, mas não foi possível devolver o estoque automaticamente.'
+    )
+  }
+
+  const restoredQuantity =
+    Number(product.quantity || 0) + Number(sale.quantity || 0)
+
+  const { error: stockError } = await supabase
+    .from('products')
+    .update({
+      quantity: restoredQuantity,
+      status:
+        restoredQuantity > 0 && product.status === 'sold'
+          ? 'in_stock'
+          : product.status,
+    })
+    .eq('id', sale.product_id)
+
+  if (stockError) {
+    throw new Error(
+      'Venda excluída, mas o estoque não foi atualizado. Ajuste a quantidade manualmente.'
+    )
+  }
 }

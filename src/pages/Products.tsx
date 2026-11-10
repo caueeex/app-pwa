@@ -322,16 +322,49 @@ export default function Products() {
 
   async function handleDelete(product: Product) {
     const confirmed = window.confirm(
-      `Deseja realmente excluir "${product.name}"?`
+      `Excluir "${product.name}"?\n\nCompras ligadas a este produto também serão removidas. Se houver vendas, exclua as vendas antes.`
     )
 
     if (!confirmed) return
 
     try {
+      setError('')
       await deleteProduct(product.id)
       await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao excluir produto.')
+    }
+  }
+
+  async function handleArchive(product: Product) {
+    if (!user) return
+
+    const confirmed = window.confirm(
+      `Marcar "${product.name}" como baixado?\n\nO item sai do estoque ativo, mas o histórico permanece.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setError('')
+      await updateProduct(product.id, {
+        category_id: product.category_id,
+        name: product.name,
+        description: product.description,
+        brand: product.brand,
+        model: product.model,
+        condition: product.condition,
+        status: 'written_off',
+        quantity: 0,
+        sku: product.sku,
+        purchase_price: product.purchase_price,
+        suggested_sale_price: product.suggested_sale_price,
+        notes: product.notes,
+        purchased_at: product.purchased_at,
+      })
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao baixar produto.')
     }
   }
 
@@ -609,6 +642,15 @@ export default function Products() {
                     >
                       Editar
                     </Button>
+                    {product.status !== 'written_off' ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void handleArchive(product)}
+                      >
+                        Baixar
+                      </Button>
+                    ) : null}
                     <Button
                       size="sm"
                       variant="danger"
