@@ -1,7 +1,13 @@
-
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import {
+  Alert,
+  Button,
+  Field,
+  Page,
+  TextInput,
+} from '../components/ui'
 
 export default function Register() {
   const { signUp } = useAuth()
@@ -35,65 +41,65 @@ export default function Register() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 flex items-center justify-center p-5">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white w-full max-w-md rounded-3xl p-8 shadow-xl"
-      >
-        <h1 className="text-3xl font-bold text-slate-900">
-          Criar conta
-        </h1>
-        <p className="text-slate-500 mt-2 mb-7">
-          Comece a organizar suas compras e vendas.
-        </p>
+    <Page auth>
+      <form className="auth-panel stack" onSubmit={handleSubmit}>
+        <div>
+          <p className="eyebrow">Cadastro</p>
+          <h1 className="brand">
+            Resale<span className="brand__mark">.</span>
+          </h1>
+          <p className="auth-copy">
+            Monte sua bancada: produtos, custos e lucro no mesmo lugar.
+          </p>
+        </div>
 
-        <label className="block text-sm font-medium mb-2">Nome</label>
-        <input
-          required
-          value={name}
-          onChange={e => setName(e.target.value)}
-          className="w-full border rounded-xl p-3 mb-4"
-          placeholder="Seu nome"
-        />
+        <Field label="Nome">
+          <TextInput
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Como te chamamos"
+            autoComplete="name"
+          />
+        </Field>
 
-        <label className="block text-sm font-medium mb-2">E-mail</label>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded-xl p-3 mb-4"
-          placeholder="seu@email.com"
-        />
+        <Field label="E-mail">
+          <TextInput
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seu@email.com"
+            autoComplete="email"
+          />
+        </Field>
 
-        <label className="block text-sm font-medium mb-2">Senha</label>
-        <input
-          type="password"
-          required
-          minLength={8}
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full border rounded-xl p-3 mb-5"
-          placeholder="Mínimo de 8 caracteres"
-        />
+        <Field label="Senha">
+          <TextInput
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo de 8 caracteres"
+            autoComplete="new-password"
+          />
+        </Field>
 
-        {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
-        {message && <p className="text-green-700 text-sm mb-4">{message}</p>}
+        {error ? <Alert>{error}</Alert> : null}
+        {message ? <Alert tone="ok">{message}</Alert> : null}
 
-        <button
-          disabled={loading}
-          className="w-full bg-green-700 text-white rounded-xl p-3 font-semibold disabled:opacity-50"
-        >
+        <Button type="submit" block disabled={loading}>
           {loading ? 'Criando conta...' : 'Criar minha conta'}
-        </button>
+        </Button>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="text-muted" style={{ textAlign: 'center', margin: 0 }}>
           Já tem conta?{' '}
-          <Link to="/login" className="text-green-700 font-semibold">
+          <Link to="/login" className="linkish">
             Fazer login
           </Link>
         </p>
       </form>
-    </main>
+    </Page>
   )
 }

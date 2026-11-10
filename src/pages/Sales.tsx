@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   getSaleProducts,
@@ -7,6 +6,18 @@ import {
   type Sale,
   type SaleProduct,
 } from '../services/salesService'
+import {
+  Alert,
+  Button,
+  EmptyState,
+  Field,
+  Metric,
+  Page,
+  PageHeader,
+  SelectInput,
+  TextArea,
+  TextInput,
+} from '../components/ui'
 
 const currency = (value: number) =>
   new Intl.NumberFormat('pt-BR', {
@@ -196,7 +207,6 @@ export default function Sales() {
           }))
         : []
 
-    // Ajusta a última parcela para compensar diferenças de centavos.
     if (installments.length > 0) {
       const installmentSum = installments.reduce(
         (sum, item) => sum + item.amount,
@@ -261,415 +271,295 @@ export default function Sales() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-5 pb-28">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-slate-400">Resale Manager</p>
-          <h1 className="text-2xl font-bold">Vendas</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Acompanhe suas vendas e recebimentos.
-          </p>
+    <Page>
+      <PageHeader
+        eyebrow="Saídas"
+        title="Vendas"
+        subtitle="Feche negócios e acompanhe o lucro."
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setShowForm((value) => !value)
+              setError('')
+              setSuccess('')
+            }}
+          >
+            {showForm ? 'Fechar' : 'Nova'}
+          </Button>
+        }
+      />
+
+      <div className="stack">
+        <div className="grid-2">
+          <Metric label="Faturamento" value={currency(totals.revenue)} />
+          <Metric
+            label="Lucro bruto"
+            value={currency(totals.profit)}
+            hint="Com snapshot de custo"
+          />
         </div>
 
-        <button
-          onClick={() => {
-            setShowForm((value) => !value)
-            setError('')
-            setSuccess('')
-          }}
-          className="rounded-xl bg-green-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-green-400"
-        >
-          {showForm ? 'Fechar' : 'Nova venda'}
-        </button>
-      </header>
+        {error ? <Alert>{error}</Alert> : null}
+        {success ? <Alert tone="ok">{success}</Alert> : null}
 
-      <section className="grid grid-cols-2 gap-3 mt-7">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <p className="text-xs text-slate-400">Faturamento</p>
-          <p className="mt-2 text-lg font-bold">
-            {currency(totals.revenue)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <p className="text-xs text-slate-400">
-            Lucro bruto registrado
-          </p>
-          <p className="mt-2 text-lg font-bold text-green-400">
-            {currency(totals.profit)}
-          </p>
-        </div>
-      </section>
-
-      {error && (
-        <div className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mt-5 rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-300">
-          {success}
-        </div>
-      )}
-
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mt-6 space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-5"
-        >
-          <div>
-            <h2 className="text-lg font-semibold">
-              Registrar venda
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              O estoque será atualizado após a confirmação.
-            </p>
-          </div>
-
-          <label className="block text-sm">
-            <span className="mb-1.5 block text-slate-300">
-              Produto
-            </span>
-
-            <select
-              value={productId}
-              onChange={(e) => {
-                setProductId(e.target.value)
-                setUnitPrice('')
-              }}
-              required
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-            >
-              {products.length === 0 && (
-                <option value="">Nenhum produto disponível</option>
-              )}
-
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} · {product.quantity} disponível(is)
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {selectedProduct && (
-            <p className="text-xs text-slate-400">
-              Estoque disponível: {selectedProduct.quantity} ·
-              Custo médio:{' '}
-              {currency(Number(selectedProduct.purchase_price))}
-            </p>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Quantidade
-              </span>
-
-              <input
-                type="number"
-                min="1"
-                max={selectedProduct?.quantity || 1}
-                step="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                required
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Preço unitário (R$)
-              </span>
-
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-          </div>
-
-          <div className="rounded-xl bg-slate-950 p-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-400">
-                Total da venda
-              </span>
-              <strong>{currency(total)}</strong>
+        {showForm && (
+          <form onSubmit={handleSubmit} className="sheet sheet-pad stack">
+            <div>
+              <h2 className="section-title">Registrar venda</h2>
+              <p className="page-sub">O estoque atualiza na confirmação.</p>
             </div>
 
-            <div className="mt-2 flex justify-between">
-              <span className="text-slate-400">
-                Lucro bruto estimado
-              </span>
-              <strong
-                className={
-                  estimatedProfit >= 0
-                    ? 'text-green-400'
-                    : 'text-red-400'
-                }
-              >
-                {currency(estimatedProfit)}
-              </strong>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Data da venda
-              </span>
-
-              <input
-                type="date"
-                value={saleDate}
-                onChange={(e) => setSaleDate(e.target.value)}
+            <Field label="Produto">
+              <SelectInput
+                value={productId}
+                onChange={(e) => {
+                  setProductId(e.target.value)
+                  setUnitPrice('')
+                }}
                 required
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Canal
-              </span>
-
-              <select
-                value={marketplace}
-                onChange={(e) => setMarketplace(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
               >
-                {marketplaceOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {products.length === 0 && (
+                  <option value="">Nenhum produto disponível</option>
+                )}
+
+                {products.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} · {product.quantity} disponível(is)
                   </option>
                 ))}
-              </select>
-            </label>
-          </div>
+              </SelectInput>
+            </Field>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Comprador
-              </span>
+            {selectedProduct ? (
+              <p className="text-muted" style={{ margin: 0, fontSize: '0.86rem' }}>
+                Estoque: {selectedProduct.quantity} · Custo médio:{' '}
+                {currency(Number(selectedProduct.purchase_price))}
+              </p>
+            ) : null}
 
-              <input
-                value={buyerName}
-                onChange={(e) => setBuyerName(e.target.value)}
-                placeholder="Nome do comprador"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Telefone
-              </span>
-
-              <input
-                value={buyerPhone}
-                onChange={(e) => setBuyerPhone(e.target.value)}
-                placeholder="(00) 00000-0000"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-          </div>
-
-          <div className="border-t border-slate-800 pt-4 space-y-3">
-            <h3 className="font-semibold">Pagamento</h3>
-
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Forma de pagamento
-              </span>
-
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              >
-                <option value="pix">Pix</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="credito">Cartão de crédito</option>
-                <option value="debito">Cartão de débito</option>
-                <option value="transferencia">Transferência</option>
-                <option value="outro">Outro</option>
-              </select>
-            </label>
-
-            <label className="block text-sm">
-              <span className="mb-1.5 block text-slate-300">
-                Valor já recebido (R$)
-              </span>
-
-              <input
-                type="number"
-                min="0"
-                max={total}
-                step="0.01"
-                value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value)}
-                placeholder="0,00"
-                className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-              />
-            </label>
-
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">
-                Valor pendente
-              </span>
-              <strong>{currency(pending)}</strong>
+            <div className="grid-2">
+              <Field label="Quantidade">
+                <TextInput
+                  type="number"
+                  min="1"
+                  max={selectedProduct?.quantity || 1}
+                  step="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  required
+                />
+              </Field>
+              <Field label="Preço unitário">
+                <TextInput
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  required
+                />
+              </Field>
             </div>
 
-            {pending > 0 && (
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm">
-                  <span className="mb-1.5 block text-slate-300">
-                    Número de parcelas
-                  </span>
-
-                  <input
-                    type="number"
-                    min="1"
-                    max="48"
-                    value={installmentCount}
-                    onChange={(e) =>
-                      setInstallmentCount(
-                        Math.max(
-                          1,
-                          Math.min(48, Number(e.target.value))
-                        )
-                      )
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-                  />
-                </label>
-
-                <label className="block text-sm">
-                  <span className="mb-1.5 block text-slate-300">
-                    1º vencimento
-                  </span>
-
-                  <input
-                    type="date"
-                    value={firstDueDate}
-                    onChange={(e) => setFirstDueDate(e.target.value)}
-                    required
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-                  />
-                </label>
+            <div className="sheet sheet-pad stack-sm">
+              <div className="list-item__top">
+                <span className="text-muted">Total</span>
+                <strong>{currency(total)}</strong>
               </div>
-            )}
-          </div>
+              <div className="list-item__top">
+                <span className="text-muted">Lucro estimado</span>
+                <strong className={estimatedProfit >= 0 ? 'text-ok' : 'text-danger'}>
+                  {currency(estimatedProfit)}
+                </strong>
+              </div>
+            </div>
 
-          <label className="block text-sm">
-            <span className="mb-1.5 block text-slate-300">
-              Observações
-            </span>
+            <div className="grid-2">
+              <Field label="Data">
+                <TextInput
+                  type="date"
+                  value={saleDate}
+                  onChange={(e) => setSaleDate(e.target.value)}
+                  required
+                />
+              </Field>
+              <Field label="Canal">
+                <SelectInput
+                  value={marketplace}
+                  onChange={(e) => setMarketplace(e.target.value)}
+                  required
+                >
+                  {marketplaceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
+            </div>
 
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Informações adicionais..."
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 p-3"
-            />
-          </label>
+            <div className="grid-2">
+              <Field label="Comprador">
+                <TextInput
+                  value={buyerName}
+                  onChange={(e) => setBuyerName(e.target.value)}
+                  placeholder="Nome"
+                />
+              </Field>
+              <Field label="Telefone">
+                <TextInput
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+              </Field>
+            </div>
 
-          <button
-            type="submit"
-            disabled={saving || !selectedProduct}
-            className="w-full rounded-xl bg-green-500 p-3 font-semibold text-slate-950 hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving ? 'Registrando venda...' : 'Confirmar venda'}
-          </button>
-        </form>
-      )}
+            <div className="stack">
+              <h3 className="section-title">Pagamento</h3>
 
-      <section className="mt-8">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
-            Histórico de vendas
-          </h2>
+              <Field label="Forma de pagamento">
+                <SelectInput
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="pix">Pix</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="credito">Cartão de crédito</option>
+                  <option value="debito">Cartão de débito</option>
+                  <option value="transferencia">Transferência</option>
+                  <option value="outro">Outro</option>
+                </SelectInput>
+              </Field>
 
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="text-sm text-green-400 disabled:opacity-50"
-          >
-            Atualizar
-          </button>
-        </div>
+              <Field label="Valor já recebido">
+                <TextInput
+                  type="number"
+                  min="0"
+                  max={total}
+                  step="0.01"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  placeholder="0,00"
+                />
+              </Field>
 
-        {loading ? (
-          <p className="text-sm text-slate-400">
-            Carregando vendas...
-          </p>
-        ) : sales.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-700 p-8 text-center">
-            <p className="font-medium">
-              Nenhuma venda registrada
-            </p>
-            <p className="mt-1 text-sm text-slate-400">
-              Suas vendas aparecerão aqui.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sales.map((sale) => (
-              <article
-                key={sale.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">
-                      {sale.products?.name || 'Produto'}
-                    </h3>
+              <div className="list-item__top">
+                <span className="text-muted">Pendente</span>
+                <strong>{currency(pending)}</strong>
+              </div>
 
-                    <p className="mt-1 text-xs text-slate-400">
-                      {new Date(
-                        `${sale.sale_date}T12:00:00`
-                      ).toLocaleDateString('pt-BR')}
-                      {' · '}
-                      {sale.quantity} unidade(s)
-                    </p>
-
-                    {sale.buyer_name && (
-                      <p className="mt-1 text-xs text-slate-400">
-                        Comprador: {sale.buyer_name}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="text-right">
-                    <p className="font-bold">
-                      {currency(Number(sale.total_amount))}
-                    </p>
-
-                    <p className="mt-1 text-xs text-green-400">
-                      Lucro {currency(Number(sale.profit_amount || 0))}
-                    </p>
-                  </div>
+              {pending > 0 && (
+                <div className="grid-2">
+                  <Field label="Parcelas">
+                    <TextInput
+                      type="number"
+                      min="1"
+                      max="48"
+                      value={installmentCount}
+                      onChange={(e) =>
+                        setInstallmentCount(
+                          Math.max(
+                            1,
+                            Math.min(48, Number(e.target.value))
+                          )
+                        )
+                      }
+                    />
+                  </Field>
+                  <Field label="1º vencimento">
+                    <TextInput
+                      type="date"
+                      value={firstDueDate}
+                      onChange={(e) => setFirstDueDate(e.target.value)}
+                      required
+                    />
+                  </Field>
                 </div>
+              )}
+            </div>
 
-                <div className="mt-3 border-t border-slate-800 pt-3 text-xs text-slate-500">
-                  Custo unitário registrado:{' '}
-                  {currency(Number(sale.unit_cost_snapshot || 0))}
-                </div>
-              </article>
-            ))}
-          </div>
+            <Field label="Observações">
+              <TextArea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Informações adicionais..."
+              />
+            </Field>
+
+            <Button
+              type="submit"
+              block
+              disabled={saving || !selectedProduct}
+            >
+              {saving ? 'Registrando...' : 'Confirmar venda'}
+            </Button>
+          </form>
         )}
-      </section>
-    </main>
+
+        <section>
+          <div className="section-head">
+            <h2 className="section-title">Histórico</h2>
+            <button
+              type="button"
+              className="linkish"
+              onClick={loadData}
+              disabled={loading}
+            >
+              Atualizar
+            </button>
+          </div>
+
+          {loading ? (
+            <p className="text-muted">Carregando vendas...</p>
+          ) : sales.length === 0 ? (
+            <EmptyState
+              title="Nenhuma venda"
+              text="Quando fechar o primeiro negócio, ele aparece aqui."
+            />
+          ) : (
+            <div className="list">
+              {sales.map((sale) => (
+                <article key={sale.id} className="list-item">
+                  <div className="list-item__top">
+                    <div>
+                      <h3 className="list-item__title">
+                        {sale.products?.name || 'Produto'}
+                      </h3>
+                      <p className="list-item__meta">
+                        {new Date(
+                          `${sale.sale_date}T12:00:00`
+                        ).toLocaleDateString('pt-BR')}
+                        {' · '}
+                        {sale.quantity} unidade(s)
+                      </p>
+                      {sale.buyer_name ? (
+                        <p className="list-item__meta">
+                          Comprador: {sale.buyer_name}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p className="list-item__value">
+                        {currency(Number(sale.total_amount))}
+                      </p>
+                      <p className="list-item__meta text-ok">
+                        Lucro {currency(Number(sale.profit_amount || 0))}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="list-item__meta" style={{ margin: 0 }}>
+                    Custo registrado:{' '}
+                    {currency(Number(sale.unit_cost_snapshot || 0))}
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </Page>
   )
 }

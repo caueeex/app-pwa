@@ -15,11 +15,11 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
 
       manifest: {
-        name: 'Resale Manager',
+        name: 'Resale',
         short_name: 'Resale',
-        description: 'Gerenciamento financeiro de produtos para revenda.',
-        theme_color: '#030712',
-        background_color: '#030712',
+        description: 'Controle de estoque, compras e vendas para revenda.',
+        theme_color: '#e6e9ef',
+        background_color: '#e6e9ef',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

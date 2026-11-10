@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -17,6 +16,18 @@ import type {
   ProductInput,
   ProductStatus,
 } from '../types/product'
+import {
+  Alert,
+  Button,
+  EmptyState,
+  Field,
+  Metric,
+  Page,
+  PageHeader,
+  SelectInput,
+  TextArea,
+  TextInput,
+} from '../components/ui'
 
 const emptyForm: ProductInput = {
   category_id: null,
@@ -325,129 +336,116 @@ export default function Products() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 px-4 pt-6 pb-32 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-green-400">Gerenciamento</p>
-            <h1 className="mt-1 text-3xl font-bold">Produtos e estoque</h1>
-            <p className="mt-2 text-sm text-gray-400">
-              Gerencie seus produtos e acompanhe seu investimento.
-            </p>
-          </div>
+    <Page>
+      <PageHeader
+        eyebrow="Estoque"
+        title="Produtos"
+        subtitle="O que você tem parado e quanto já investiu."
+        action={
+          <Button size="sm" onClick={openNewForm}>
+            Novo
+          </Button>
+        }
+      />
 
-          <button
-            onClick={openNewForm}
-            className="rounded-xl bg-green-500 px-5 py-3 font-semibold text-gray-950 transition hover:bg-green-400"
-          >
-            + Novo produto
-          </button>
+      <div className="stack">
+        <div className="grid-2">
+          <Metric label="Unidades" value={String(totalUnits)} />
+          <Metric label="Investido" value={money(invested)} />
         </div>
-
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SummaryCard label="Unidades em estoque" value={String(totalUnits)} />
-          <SummaryCard label="Valor investido" value={money(invested)} />
-          <SummaryCard label="Venda potencial" value={money(potentialRevenue)} />
-        </div>
+        <Metric
+          label="Venda potencial"
+          value={money(potentialRevenue)}
+          hint="Somando preço sugerido do estoque"
+        />
 
         {showForm && (
-          <section className="mb-8 rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-7">
-            <div className="mb-6 flex items-center justify-between gap-3">
+          <section className="sheet sheet-pad stack">
+            <div className="page-header" style={{ marginBottom: 0 }}>
               <div>
-                <h2 className="text-xl font-bold">
-                  {editingId ? 'Editar produto' : 'Cadastrar produto'}
+                <h2 className="section-title">
+                  {editingId ? 'Editar produto' : 'Novo produto'}
                 </h2>
-                <p className="mt-1 text-sm text-gray-400">
-                  Preencha as informações do item.
-                </p>
+                <p className="page-sub">Dados essenciais do item.</p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg px-3 py-2 text-gray-400 hover:bg-gray-800 hover:text-white"
-              >
+              <Button variant="ghost" size="sm" type="button" onClick={() => setShowForm(false)}>
                 Fechar
-              </button>
+              </Button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Field label="Nome do produto *">
-                  <input
-                    required
-                    value={form.name}
-                    onChange={(e) => changeField('name', e.target.value)}
-                    placeholder="Ex.: iPhone 13"
-                    className="input"
-                  />
-                </Field>
+            <form onSubmit={handleSubmit} className="stack">
+              <Field label="Nome *">
+                <TextInput
+                  required
+                  value={form.name}
+                  onChange={(e) => changeField('name', e.target.value)}
+                  placeholder="Ex.: iPhone 13"
+                />
+              </Field>
 
+              <div className="grid-2">
                 <Field label="Marca">
-                  <input
+                  <TextInput
                     value={form.brand ?? ''}
                     onChange={(e) => changeField('brand', e.target.value)}
-                    placeholder="Ex.: Apple"
-                    className="input"
+                    placeholder="Apple"
                   />
                 </Field>
-
                 <Field label="Modelo">
-                  <input
+                  <TextInput
                     value={form.model ?? ''}
                     onChange={(e) => changeField('model', e.target.value)}
-                    placeholder="Ex.: 128GB"
-                    className="input"
+                    placeholder="128GB"
                   />
                 </Field>
+              </div>
 
-                <Field label="Categoria">
-                  <select
-                    value={form.category_id ?? ''}
-                    onChange={(e) =>
-                      changeField('category_id', e.target.value || null)
-                    }
-                    className="input"
-                  >
-                    <option value="">Sem categoria</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+              <Field label="Categoria">
+                <SelectInput
+                  value={form.category_id ?? ''}
+                  onChange={(e) =>
+                    changeField('category_id', e.target.value || null)
+                  }
+                >
+                  <option value="">Sem categoria</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
 
+              <div className="grid-2">
                 <Field label="Condição">
-                  <select
+                  <SelectInput
                     value={form.condition}
                     onChange={(e) =>
                       changeField('condition', e.target.value as ProductCondition)
                     }
-                    className="input"
                   >
                     <option value="new">Novo</option>
                     <option value="used">Usado</option>
                     <option value="refurbished">Recondicionado</option>
-                  </select>
+                  </SelectInput>
                 </Field>
-
                 <Field label="Situação">
-                  <select
+                  <SelectInput
                     value={form.status}
                     onChange={(e) =>
                       changeField('status', e.target.value as ProductStatus)
                     }
-                    className="input"
                   >
                     {Object.entries(statusLabels).map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
-                  </select>
+                  </SelectInput>
                 </Field>
+              </div>
 
+              <div className="grid-2">
                 <Field label="Quantidade">
-                  <input
+                  <TextInput
                     type="number"
                     min="0"
                     step="1"
@@ -456,32 +454,30 @@ export default function Products() {
                     onChange={(e) =>
                       changeField('quantity', Number(e.target.value))
                     }
-                    className="input"
                   />
                 </Field>
-
-                <Field label="Código / SKU">
-                  <input
+                <Field label="SKU">
+                  <TextInput
                     value={form.sku ?? ''}
                     onChange={(e) => changeField('sku', e.target.value)}
-                    placeholder="Ex.: IPH-001"
-                    className="input"
+                    placeholder="IPH-001"
                   />
                 </Field>
+              </div>
 
-                <Field label="Data da aquisição">
-                  <input
-                    type="date"
-                    value={form.purchased_at ?? ''}
-                    onChange={(e) =>
-                      changeField('purchased_at', e.target.value || null)
-                    }
-                    className="input"
-                  />
-                </Field>
+              <Field label="Data da aquisição">
+                <TextInput
+                  type="date"
+                  value={form.purchased_at ?? ''}
+                  onChange={(e) =>
+                    changeField('purchased_at', e.target.value || null)
+                  }
+                />
+              </Field>
 
-                <Field label="Preço de compra (R$)">
-                  <input
+              <div className="grid-2">
+                <Field label="Custo (R$)">
+                  <TextInput
                     type="number"
                     min="0"
                     step="0.01"
@@ -490,12 +486,10 @@ export default function Products() {
                     onChange={(e) =>
                       changeField('purchase_price', Number(e.target.value))
                     }
-                    className="input"
                   />
                 </Field>
-
-                <Field label="Preço sugerido de venda (R$)">
-                  <input
+                <Field label="Venda sugerida">
+                  <TextInput
                     type="number"
                     min="0"
                     step="0.01"
@@ -504,303 +498,317 @@ export default function Products() {
                     onChange={(e) =>
                       changeField('suggested_sale_price', Number(e.target.value))
                     }
-                    className="input"
                   />
                 </Field>
               </div>
 
               <Field label="Descrição">
-                <textarea
+                <TextArea
                   rows={3}
                   value={form.description ?? ''}
                   onChange={(e) => changeField('description', e.target.value)}
-                  placeholder="Detalhes e características do produto..."
-                  className="input"
+                  placeholder="Detalhes do produto..."
                 />
               </Field>
 
-              <Field label="Observações internas">
-                <textarea
+              <Field label="Observações">
+                <TextArea
                   rows={2}
                   value={form.notes ?? ''}
                   onChange={(e) => changeField('notes', e.target.value)}
-                  placeholder="Estado de conservação, acessórios, detalhes..."
-                  className="input"
+                  placeholder="Estado, acessórios..."
                 />
               </Field>
 
-              {error && (
-                <p className="rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-300">
-                  {error}
-                </p>
-              )}
+              {error ? <Alert>{error}</Alert> : null}
 
-              <div className="flex flex-wrap justify-end gap-3">
-                <button
+              <div className="stack-sm">
+                <Button type="submit" block disabled={saving}>
+                  {saving ? 'Salvando...' : editingId ? 'Salvar' : 'Cadastrar'}
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  block
                   onClick={() => setShowForm(false)}
-                  className="rounded-xl border border-gray-700 px-5 py-3 text-gray-300 hover:bg-gray-800"
                 >
                   Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-xl bg-green-500 px-6 py-3 font-semibold text-gray-950 hover:bg-green-400 disabled:opacity-50"
-                >
-                  {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar produto'}
-                </button>
+                </Button>
               </div>
             </form>
           </section>
         )}
 
-        {selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4">
-            <section className="my-auto w-full max-w-2xl rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-7">
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-green-400">Detalhes do produto</p>
-                  <h2 className="mt-1 text-2xl font-bold">{selectedProduct.name}</h2>
-                  <p className="mt-1 text-sm text-gray-400">
-                    {[selectedProduct.brand, selectedProduct.model].filter(Boolean).join(' · ')}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedProduct(null)}
-                  className="rounded-lg px-3 py-2 text-gray-400 hover:bg-gray-800"
-                >
-                  Fechar
-                </button>
-              </div>
-
-              <div className="mb-6 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-gray-800 p-4">
-                  <p className="text-sm text-gray-400">Estoque atual</p>
-                  <p className="mt-2 text-2xl font-bold">{selectedProduct.quantity} un.</p>
-                </div>
-                <div className="rounded-xl bg-gray-800 p-4">
-                  <p className="text-sm text-gray-400">Custo médio</p>
-                  <p className="mt-2 text-2xl font-bold text-green-400">{money(selectedProduct.purchase_price)}</p>
-                </div>
-              </div>
-
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold">Histórico de aquisições</h3>
-                <button
-                  onClick={() => {
-                    setShowAcquisitionForm((current) => !current)
-                    setAcquisitionError('')
-                  }}
-                  className="rounded-xl bg-green-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-green-400"
-                >
-                  + Adicionar aquisição
-                </button>
-              </div>
-
-              {showAcquisitionForm && (
-                <form onSubmit={handleAddAcquisition} className="mb-6 space-y-4 rounded-xl border border-gray-700 bg-gray-800/60 p-4">
-                  <h4 className="font-semibold">Nova aquisição</h4>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <Field label="Quantidade adquirida">
-                      <input type="number" min="1" step="1" required value={acquisitionForm.quantity}
-                        onChange={(e) => setAcquisitionForm((current) => ({ ...current, quantity: Number(e.target.value) }))} className="input" />
-                    </Field>
-                    <Field label="Custo unitário (R$)">
-                      <input type="number" min="0" step="0.01" required value={acquisitionForm.unit_price}
-                        onChange={(e) => setAcquisitionForm((current) => ({ ...current, unit_price: Number(e.target.value) }))} className="input" />
-                    </Field>
-                    <Field label="Data da aquisição">
-                      <input type="date" required value={acquisitionForm.purchase_date}
-                        onChange={(e) => setAcquisitionForm((current) => ({ ...current, purchase_date: e.target.value }))} className="input" />
-                    </Field>
-                    <Field label="Fornecedor / vendedor">
-                      <input value={acquisitionForm.seller_name}
-                        onChange={(e) => setAcquisitionForm((current) => ({ ...current, seller_name: e.target.value }))}
-                        placeholder="Nome do vendedor" className="input" />
-                    </Field>
-                    <Field label="Telefone do vendedor">
-                      <input value={acquisitionForm.seller_phone}
-                        onChange={(e) => setAcquisitionForm((current) => ({ ...current, seller_phone: e.target.value }))}
-                        placeholder="Telefone (opcional)" className="input" />
-                    </Field>
-                  </div>
-                  <Field label="Observações">
-                    <textarea rows={2} value={acquisitionForm.notes}
-                      onChange={(e) => setAcquisitionForm((current) => ({ ...current, notes: e.target.value }))}
-                      placeholder="Informações adicionais..." className="input" />
-                  </Field>
-                  <div className="rounded-lg bg-gray-900 p-3">
-                    <p className="text-sm text-gray-400">Total da aquisição</p>
-                    <p className="mt-1 text-xl font-bold text-green-400">{money(acquisitionForm.quantity * acquisitionForm.unit_price)}</p>
-                  </div>
-                  {acquisitionError && (
-                    <p className="rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-300">{acquisitionError}</p>
-                  )}
-                  <div className="flex justify-end gap-3">
-                    <button type="button" onClick={() => setShowAcquisitionForm(false)} className="rounded-xl border border-gray-700 px-4 py-2 text-gray-300">Cancelar</button>
-                    <button type="submit" disabled={acquisitionSaving} className="rounded-xl bg-green-500 px-5 py-2 font-semibold text-gray-950 disabled:opacity-50">
-                      {acquisitionSaving ? 'Registrando...' : 'Registrar aquisição'}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {acquisitionError && !showAcquisitionForm && (
-                <p className="mb-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-300">{acquisitionError}</p>
-              )}
-
-              {acquisitionLoading ? (
-                <p className="py-8 text-center text-gray-400">Carregando histórico...</p>
-              ) : acquisitions.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-gray-700 p-6 text-center text-sm text-gray-400">
-                  Nenhuma aquisição registrada para este produto.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {acquisitions.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-xl border border-gray-800 bg-gray-800/50 p-4">
-                      <div>
-                        <p className="font-medium">{item.quantity} unidade(s) · {money(Number(item.unit_price))} cada</p>
-                        <p className="mt-1 text-xs text-gray-400">
-                          {new Date(`${item.purchase_date}T12:00:00`).toLocaleDateString('pt-BR')}
-                          {item.seller_name ? ` · ${item.seller_name}` : ''}
-                        </p>
-                      </div>
-                      <p className="whitespace-nowrap font-semibold text-green-400">{money(Number(item.total_amount))}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-
-        <section className="rounded-2xl border border-gray-800 bg-gray-900 p-4 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row">
-            <input
+        <section className="stack">
+          <div className="stack-sm">
+            <TextInput
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nome, marca, modelo ou SKU..."
-              className="input flex-1"
+              placeholder="Buscar nome, marca, modelo ou SKU"
             />
-
-            <select
+            <SelectInput
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="input sm:w-48"
             >
               <option value="all">Todas as situações</option>
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
-            </select>
+            </SelectInput>
           </div>
 
-          {error && !showForm && (
-            <p className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300">
-              {error}
-            </p>
-          )}
+          {error && !showForm ? <Alert>{error}</Alert> : null}
 
           {loading ? (
-            <p className="py-10 text-center text-gray-400">Carregando produtos...</p>
+            <p className="text-muted">Carregando produtos...</p>
           ) : filteredProducts.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-lg font-semibold">Nenhum produto encontrado</p>
-              <p className="mt-2 text-sm text-gray-400">
-                Cadastre seu primeiro produto para começar a controlar o estoque.
-              </p>
-              <button
-                onClick={openNewForm}
-                className="mt-5 rounded-xl bg-green-500 px-5 py-3 font-semibold text-gray-950"
-              >
-                Cadastrar primeiro produto
-              </button>
-            </div>
+            <EmptyState
+              title="Nada por aqui"
+              text="Cadastre o primeiro item para começar o estoque."
+              action={
+                <Button onClick={openNewForm}>Cadastrar produto</Button>
+              }
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="border-b border-gray-800 text-gray-400">
-                  <tr>
-                    <th className="px-3 py-4 font-medium">Produto</th>
-                    <th className="px-3 py-4 font-medium">Condição</th>
-                    <th className="px-3 py-4 font-medium">Quantidade</th>
-                    <th className="px-3 py-4 font-medium">Compra</th>
-                    <th className="px-3 py-4 font-medium">Venda sugerida</th>
-                    <th className="px-3 py-4 font-medium">Situação</th>
-                    <th className="px-3 py-4 text-right font-medium">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-800/40">
-                      <td className="px-3 py-4">
-                        <p className="font-semibold">{product.name}</p>
-                        <p className="mt-1 text-xs text-gray-400">
-                          {[product.brand, product.model].filter(Boolean).join(' · ') || 'Sem marca/modelo'}
-                        </p>
-                      </td>
-                      <td className="px-3 py-4 text-gray-300">
+            <div className="list">
+              {filteredProducts.map((product) => (
+                <article key={product.id} className="list-item">
+                  <div className="list-item__top">
+                    <div>
+                      <h3 className="list-item__title">{product.name}</h3>
+                      <p className="list-item__meta">
+                        {[product.brand, product.model].filter(Boolean).join(' · ') ||
+                          'Sem marca/modelo'}
+                        {' · '}
                         {conditionLabels[product.condition]}
-                      </td>
-                      <td className="px-3 py-4">{product.quantity}</td>
-                      <td className="px-3 py-4">{money(product.purchase_price)}</td>
-                      <td className="px-3 py-4">{money(product.suggested_sale_price)}</td>
-                      <td className="px-3 py-4">
-                        <span className="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-300">
-                          {statusLabels[product.status]}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => void openProductDetails(product)}
-                            className="rounded-lg border border-green-800 px-3 py-2 text-xs text-green-400 hover:bg-green-950"
-                          >
-                            Detalhes
-                          </button>
-                          <button
-                            onClick={() => openEditForm(product)}
-                            className="rounded-lg border border-gray-700 px-3 py-2 text-xs hover:bg-gray-700"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => void handleDelete(product)}
-                            className="rounded-lg border border-red-900 px-3 py-2 text-xs text-red-300 hover:bg-red-950"
-                          >
-                            Excluir
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                    <p className="list-item__value">
+                      {money(product.suggested_sale_price)}
+                    </p>
+                  </div>
+
+                  <div className="row" style={{ flexWrap: 'wrap' }}>
+                    <span className="chip chip-ok">{product.quantity} un.</span>
+                    <span className="chip">{statusLabels[product.status]}</span>
+                    <span className="chip">Custo {money(product.purchase_price)}</span>
+                  </div>
+
+                  <div className="row" style={{ flexWrap: 'wrap' }}>
+                    <Button
+                      size="sm"
+                      variant="accent"
+                      onClick={() => void openProductDetails(product)}
+                    >
+                      Detalhes
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openEditForm(product)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => void handleDelete(product)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </section>
       </div>
-    </main>
-  )
-}
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-      <p className="text-sm text-gray-400">{label}</p>
-      <p className="mt-3 text-2xl font-bold">{value}</p>
-    </div>
-  )
-}
+      {selectedProduct && (
+        <div className="overlay" role="dialog" aria-modal="true">
+          <section className="drawer stack">
+            <div className="page-header" style={{ marginBottom: 0 }}>
+              <div>
+                <p className="eyebrow">Produto</p>
+                <h2 className="page-title" style={{ fontSize: '1.55rem' }}>
+                  {selectedProduct.name}
+                </h2>
+                <p className="page-sub">
+                  {[selectedProduct.brand, selectedProduct.model]
+                    .filter(Boolean)
+                    .join(' · ') || 'Sem marca/modelo'}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedProduct(null)}
+              >
+                Fechar
+              </Button>
+            </div>
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm text-gray-300">{label}</span>
-      {children}
-    </label>
+            <div className="grid-2">
+              <Metric label="Estoque" value={`${selectedProduct.quantity} un.`} />
+              <Metric
+                label="Custo médio"
+                value={money(selectedProduct.purchase_price)}
+              />
+            </div>
+
+            <div className="section-head">
+              <h3 className="section-title">Aquisições</h3>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setShowAcquisitionForm((current) => !current)
+                  setAcquisitionError('')
+                }}
+              >
+                {showAcquisitionForm ? 'Fechar' : 'Adicionar'}
+              </Button>
+            </div>
+
+            {showAcquisitionForm && (
+              <form onSubmit={handleAddAcquisition} className="sheet sheet-pad stack">
+                <div className="grid-2">
+                  <Field label="Quantidade">
+                    <TextInput
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      value={acquisitionForm.quantity}
+                      onChange={(e) =>
+                        setAcquisitionForm((current) => ({
+                          ...current,
+                          quantity: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </Field>
+                  <Field label="Custo unitário">
+                    <TextInput
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      value={acquisitionForm.unit_price}
+                      onChange={(e) =>
+                        setAcquisitionForm((current) => ({
+                          ...current,
+                          unit_price: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Data">
+                  <TextInput
+                    type="date"
+                    required
+                    value={acquisitionForm.purchase_date}
+                    onChange={(e) =>
+                      setAcquisitionForm((current) => ({
+                        ...current,
+                        purchase_date: e.target.value,
+                      }))
+                    }
+                  />
+                </Field>
+
+                <div className="grid-2">
+                  <Field label="Fornecedor">
+                    <TextInput
+                      value={acquisitionForm.seller_name}
+                      onChange={(e) =>
+                        setAcquisitionForm((current) => ({
+                          ...current,
+                          seller_name: e.target.value,
+                        }))
+                      }
+                      placeholder="Nome"
+                    />
+                  </Field>
+                  <Field label="Telefone">
+                    <TextInput
+                      value={acquisitionForm.seller_phone}
+                      onChange={(e) =>
+                        setAcquisitionForm((current) => ({
+                          ...current,
+                          seller_phone: e.target.value,
+                        }))
+                      }
+                      placeholder="Opcional"
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Observações">
+                  <TextArea
+                    rows={2}
+                    value={acquisitionForm.notes}
+                    onChange={(e) =>
+                      setAcquisitionForm((current) => ({
+                        ...current,
+                        notes: e.target.value,
+                      }))
+                    }
+                  />
+                </Field>
+
+                <Metric
+                  label="Total da aquisição"
+                  value={money(
+                    acquisitionForm.quantity * acquisitionForm.unit_price
+                  )}
+                />
+
+                {acquisitionError ? <Alert>{acquisitionError}</Alert> : null}
+
+                <Button type="submit" block disabled={acquisitionSaving}>
+                  {acquisitionSaving ? 'Registrando...' : 'Registrar aquisição'}
+                </Button>
+              </form>
+            )}
+
+            {acquisitionError && !showAcquisitionForm ? (
+              <Alert>{acquisitionError}</Alert>
+            ) : null}
+
+            {acquisitionLoading ? (
+              <p className="text-muted">Carregando histórico...</p>
+            ) : acquisitions.length === 0 ? (
+              <EmptyState
+                title="Sem aquisições"
+                text="Registre a primeira entrada deste produto."
+              />
+            ) : (
+              <div className="list">
+                {acquisitions.map((item) => (
+                  <article key={item.id} className="list-item">
+                    <div className="list-item__top">
+                      <div>
+                        <p className="list-item__title">
+                          {item.quantity} un. · {money(Number(item.unit_price))}
+                        </p>
+                        <p className="list-item__meta">
+                          {new Date(`${item.purchase_date}T12:00:00`).toLocaleDateString('pt-BR')}
+                          {item.seller_name ? ` · ${item.seller_name}` : ''}
+                        </p>
+                      </div>
+                      <p className="list-item__value text-ok">
+                        {money(Number(item.total_amount))}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+    </Page>
   )
 }
